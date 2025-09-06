@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { getYouTubeVideoId } from "@/lib/utils";
 
@@ -6,7 +7,6 @@ interface YouTubePlayerProps {
   videoUrl: string;
   playerRef: React.MutableRefObject<any>;
   isPlaying: boolean;
-  isMuted: boolean;
 }
 
 declare global {
@@ -17,23 +17,30 @@ declare global {
   }
 }
 
-// Initialize the queue if it doesn't exist
+// Initialize YT API Queue
 if (typeof window !== "undefined") {
   window.ytPlayerQueue = window.ytPlayerQueue || [];
   window.onYouTubeIframeAPIReady = () => {
     window.ytPlayerQueue.forEach((playerFn) => playerFn());
-    window.ytPlayerQueue = []; // Clear the queue after processing
+    window.ytPlayerQueue = [];
   };
 }
 
-export function YouTubePlayer({ videoUrl, playerRef, isPlaying, isMuted }: YouTubePlayerProps) {
+export function YouTubePlayer({
+  videoUrl,
+  playerRef,
+  isPlaying,
+}: YouTubePlayerProps) {
   const [isReady, setIsReady] = useState(false);
   const videoId = getYouTubeVideoId(videoUrl);
-  const playerId = `ytplayer-${videoId}-${Math.random().toString(36).substring(2, 9)}`;
+
+  const playerId = `ytplayer-${videoId}-${Math.random()
+    .toString(36)
+    .substring(2, 9)}`;
 
   useEffect(() => {
     if (!videoId) {
-      console.error("Invalid video URL, cannot create player:", videoUrl);
+      console.error("Invalid video URL:", videoUrl);
       return;
     }
 
@@ -48,11 +55,10 @@ export function YouTubePlayer({ videoUrl, playerRef, isPlaying, isMuted }: YouTu
           autoplay: 0,
           controls: 0,
           rel: 0,
-          showinfo: 0,
-          mute: isMuted ? 1 : 0,
           playsinline: 1,
           loop: 1,
           playlist: videoId,
+          mute: 0, // ✅ Always unmuted
         },
         events: {
           onReady: (event: any) => {
@@ -76,32 +82,18 @@ export function YouTubePlayer({ videoUrl, playerRef, isPlaying, isMuted }: YouTu
         playerRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, playerId]);
 
-  // ✅ Play/Pause
+  // ✅ One video play at a time
   useEffect(() => {
     const player = playerRef.current;
     if (!isReady || !player) return;
-
     if (isPlaying) {
       player.playVideo();
     } else {
       player.pauseVideo();
     }
   }, [isPlaying, isReady, playerRef]);
-
-  // ✅ Mute/Unmute
-  useEffect(() => {
-    const player = playerRef.current;
-    if (!isReady || !player) return;
-
-    if (isMuted) {
-      player.mute();
-    } else {
-      player.unMute();
-    }
-  }, [isMuted, isReady, playerRef]);
 
   if (!videoId) {
     return (
