@@ -1,6 +1,4 @@
-
 "use client";
-
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { Movie } from "@/lib/types";
 import { ThumbsUp, ThumbsDown, MessageCircle, Share2, MoreVertical, Music4 } from "lucide-react";
@@ -14,28 +12,24 @@ interface ShortsViewerProps {
 
 export function ShortsViewer({ movies }: ShortsViewerProps) {
   const [activePlayerIndex, setActivePlayerIndex] = useState<number | null>(0);
-  const playerRefs = useMemo(() => Array.from({ length: movies.length }, () => React.createRef<any>()), [movies.length]);
+  const playerRefs = useMemo(
+    () => Array.from({ length: movies.length }, () => React.createRef<any>()),
+    [movies.length]
+  );
   const videoRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     videoRefs.current = Array.from({ length: movies.length }, () => null);
   }, [movies.length]);
 
+  // ✅ Ek waqt par ek hi video active
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const index = videoRefs.current.indexOf(entry.target as HTMLDivElement);
-            if (index !== -1) {
-              setActivePlayerIndex(index);
-            }
-          } else {
-            // Optional: Pause video when it's not intersecting
-            const index = videoRefs.current.indexOf(entry.target as HTMLDivElement);
-            if (index !== -1 && index === activePlayerIndex) {
-              // You could set activePlayerIndex to null or handle pausing differently
-            }
+        entries.forEach((entry) => {
+          const index = videoRefs.current.indexOf(entry.target as HTMLDivElement);
+          if (entry.isIntersecting && index !== -1) {
+            setActivePlayerIndex(index);
           }
         });
       },
@@ -43,17 +37,16 @@ export function ShortsViewer({ movies }: ShortsViewerProps) {
     );
 
     const currentVideoRefs = videoRefs.current;
-    currentVideoRefs.forEach(ref => {
+    currentVideoRefs.forEach((ref) => {
       if (ref) observer.observe(ref);
     });
 
     return () => {
-      currentVideoRefs.forEach(ref => {
+      currentVideoRefs.forEach((ref) => {
         if (ref) observer.unobserve(ref);
       });
     };
-  }, [movies.length, activePlayerIndex]);
-
+  }, [movies.length]);
 
   if (movies.length === 0) {
     return (
@@ -71,16 +64,17 @@ export function ShortsViewer({ movies }: ShortsViewerProps) {
       {movies.map((movie, index) => (
         <div
           key={movie.id}
-          ref={el => videoRefs.current[index] = el}
-          className="h-full w-full snap-start relative flex items-center justify-center bg-black"
+          ref={(el) => (videoRefs.current[index] = el)}
+          className="h-screen w-full snap-start relative flex items-center justify-center bg-black"
         >
           <YouTubePlayer
             videoUrl={movie.url}
             playerRef={playerRefs[index]}
             isPlaying={index === activePlayerIndex}
-            isMuted={false} 
+            isMuted={false}
           />
-          
+
+          {/* Right side buttons */}
           <div className="absolute bottom-16 right-0 p-4 flex flex-col items-center justify-end z-10 gap-4">
             <div className="flex flex-col items-center text-white">
               <Button variant="ghost" size="icon" className="rounded-full h-12 w-12 bg-black/50 hover:bg-black/70">
@@ -114,22 +108,25 @@ export function ShortsViewer({ movies }: ShortsViewerProps) {
             </Avatar>
           </div>
 
+          {/* Bottom info */}
           <div className="absolute bottom-16 left-0 p-4 text-white bg-gradient-to-t from-black/60 to-transparent w-full">
-             <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                    <Avatar className="h-9 w-9">
-                        <AvatarImage src={movie.channelThumbnailUrl} />
-                        <AvatarFallback>{movie.channelTitle?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-semibold text-sm">@{movie.channelTitle?.toLowerCase().replace(/\s/g, '_')}</span>
-                    <Button size="sm" className="h-8 text-sm bg-white text-black font-bold rounded-full hover:bg-white/90 px-4">Subscribe</Button>
-                </div>
-                <p className="text-sm line-clamp-2">{movie.title}</p>
-                <div className="flex items-center gap-2">
-                    <Music4 className="h-4 w-4" />
-                    <p className="text-xs truncate">Original audio - {movie.channelTitle}</p>
-                </div>
-             </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={movie.channelThumbnailUrl} />
+                  <AvatarFallback>{movie.channelTitle?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <span className="font-semibold text-sm">@{movie.channelTitle?.toLowerCase().replace(/\s/g, "_")}</span>
+                <Button size="sm" className="h-8 text-sm bg-white text-black font-bold rounded-full hover:bg-white/90 px-4">
+                  Subscribe
+                </Button>
+              </div>
+              <p className="text-sm line-clamp-2">{movie.title}</p>
+              <div className="flex items-center gap-2">
+                <Music4 className="h-4 w-4" />
+                <p className="text-xs truncate">Original audio - {movie.channelTitle}</p>
+              </div>
+            </div>
           </div>
         </div>
       ))}
